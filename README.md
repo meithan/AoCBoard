@@ -4,12 +4,9 @@
 
 This is a simple PHP script that displays an Advent of Code's private leaderboard, including more stats and **medals** for the top three fastest solvers for each of the 50 stars. It was inspired by u/jeroenheijmans's [Chrome/Firefox extension](https://www.reddit.com/r/adventofcode/comments/a4mdtp/chromefirefox_extension_with_charts_for_private/).
 
-
 To make this work you'll need to know the **private leaderboard ID** and your **adventofcode.com session ID**. If you don't know these, scroll down for instructions on obtaining them.
 
-Having those, you can enter them directly in the form and hit submit, but the session ID will be visible in the URL, which means you shouldn't share the URL. 
-
-Alternatively, download this PHP file (and associated images), and edit the values of the **$board_id** and **$session_id** variables at the top of the file. Then you can upload the files to your webserver.
+Having those, and edit the values of the **$board_id** and **$session_id** variables at the top of the file. Then you can upload the files to your webserver.
 
 If you don't have a webserver but have access to a terminal and PHP, you can quickly host one locally on your computer by navigating to where the files are and doing
 
@@ -26,14 +23,14 @@ on your browser.
 Go to the official private leaderboard you want to view and obtain the ID at the end of the URL:
 
 ![alt text](https://github.com/meithan/AoCBoard/blob/master/guide_leaderboard_id.png "Leaderboard ID")
-   
+
 It should be a numeric value around 5 digits long.
 
 ### adventofcode.com session ID ###
 
 You'll need to access your adventofcode.com cookie and retrieve your session ID from it. It should be 96 hex digits long, something like this:
  `ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d`
- 
+
 Navigate to [adventofcode.com](https://adventofcode.com/2018) and **log in**. Then:
 
 On **Chrome**:
