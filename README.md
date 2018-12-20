@@ -28,6 +28,8 @@ It should be a numeric value around 5 digits long.
 
 ### adventofcode.com session ID ###
 
+**NOTE: _Never_ share or make public in any way your AoC cookie session ID, as you'll grant strangers access to your AoC account!**
+
 You'll need to access your adventofcode.com cookie and retrieve your session ID from it. It should be 96 hex digits long, something like this:
  `ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d`
 
