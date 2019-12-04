@@ -6,21 +6,17 @@ This is a simple PHP script that displays an Advent of Code's private leaderboar
 
 To make this work you'll need to know the **private leaderboard ID** and your **adventofcode.com session ID**. If you don't know these, scroll down for instructions on obtaining them.
 
-Having those, and edit the values of the **$board_id** and **$session_id** variables at the top of the file. Then you can upload the files to your webserver.
+Having those, edit the values of the **$board_id** and **$session_id** variables in the `config.php` file. You can also change the **$year** variable to view the leaderboard for a different year. Now you can view `leaderboard.php` on your webserver.
 
-If you don't have a webserver but have access to a terminal and PHP, you can quickly host one locally on your computer by navigating to where the files are and doing
+If you don't have a webserver but have access to a terminal and PHP, you can quickly host one locally on your computer by navigating to where the files are and executing
 
 `php -S 127.0.0.1:8000 -t .`
 
-Then you can view the leaderboard by going to
-
-`localhost:8000/leaderboard.php`
-
-on your browser.
+Then you can view the leaderboard by going to `localhost:8000/leaderboard.php` on your browser.
 
 ### private leaderboard ID ###
 
-Go to the official private leaderboard you want to view and obtain the ID at the end of the URL:
+Go to the private leaderboard you want to view on the AoC website and obtain the ID at the end of the URL:
 
 ![alt text](https://github.com/meithan/AoCBoard/blob/master/guide_leaderboard_id.png "Leaderboard ID")
 
@@ -31,7 +27,8 @@ It should be a numeric value around 5 digits long.
 **NOTE: _Never_ share or make public in any way your AoC cookie session ID, as you'll grant strangers access to your AoC account!**
 
 You'll need to access your adventofcode.com cookie and retrieve your session ID from it. It should be 96 hex digits long, something like this:
- `ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d`
+
+`ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d`
 
 Navigate to [adventofcode.com](https://adventofcode.com/2018) and **log in**. Then:
 

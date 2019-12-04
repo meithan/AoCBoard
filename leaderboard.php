@@ -1,17 +1,7 @@
 <?php
 
-/*********************************************
-*   SET YOUR LEADERBOARD PARAMETERS HERE     *
-*********************************************/
-
-// The private leaderboard id
-// This should be a numeric value with a few (4-6) digits
-$board_id = "";
-
-// Your own AoC session cookie ID
-// (you need to be a member of the private leaderboard)
-// This should be 96 hexadecimal digits
-$session_id = ""
+// EDIT THIS FILE TO SET YOUR LEADERBOARD PARAMETERS
+require("config.php");
 
 ?>
 <html lang="en-us">
@@ -151,7 +141,7 @@ $session_id = ""
 
   if (!empty($board_id)) {
     $json_fname = $board_id . ".json";
-    $json_url = "https://adventofcode.com/2018/leaderboard/private/view/" . $json_fname;
+    $json_url = "https://adventofcode.com/" . $year . "/leaderboard/private/view/" . $json_fname;
   }
 
   if (!empty($board_id) && !empty($session_id)) {
@@ -194,7 +184,7 @@ $session_id = ""
 
   if (!empty($data)) { ?>
 
-    <h4>Advent of Code 2018 &mdash; Private leaderboard #<?= $board_id ?> <?php if ($fromGET) { ?><small><a href="<?php echo parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH); ?>">view another</a></small><?php } ?></h4>
+    <h4>Advent of Code <?= $year ?> &mdash; Private leaderboard #<?= $board_id ?> <?php if ($fromGET) { ?><small><a href="<?php echo parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH); ?>">view another</a></small><?php } ?></h4>
 
     <?php
 
@@ -305,7 +295,7 @@ $session_id = ""
           <?php
           for ($day = 1; $day <= 25; $day++) {
 
-            $puzzle_open = new DateTime('2018-12-' . $day . "T" . "05:00:00Z");
+            $puzzle_open = new DateTime($year . '-12-' . $day . "T" . "05:00:00Z");
 
             for ($star_num = 1; $star_num <= 2; $star_num++) { ?>
 
@@ -319,7 +309,7 @@ $session_id = ""
                 $solve_ts = $players[$i]["completion_day_level"][$day][$star_num]["get_star_ts"];
 
                 $tooltip = '<span>Day ' . $day . ' Star '. $star_num;
-                $tooltip .= '<br>Obtained ' . gmdate("Y-m-d H:i:s T", $solve_ts);
+                $tooltip .= '<br>Obtained ' . gmdate("Y-m-d H:i:s", $solve_ts) . " UTC";
                 $tooltip .= "<br>Solve time: " . nice_solve_time($puzzle_open, $solve_ts);
                 if (array_key_exists("gold", $players[$i]["medals"][$day][$star_num])) {
                   $tooltip .= '<br><span class="gold">Gold</span> medal awarded!';
@@ -354,7 +344,7 @@ $session_id = ""
 
     <p><small>Sort by: <?php
     $bits = array();
-    $entries = array("local_score"=>"local score", "stars"=>"stars", "medals_tot"=>"total medals", "gold"=>"gold medals", "silver"=>"silver medals", "bronze"=>"bronze medals");
+    $entries = array("local_score"=>"score", "stars"=>"stars", "medals_tot"=>"total medals", "gold"=>"gold medals", "silver"=>"silver medals", "bronze"=>"bronze medals");
     foreach ($entries as $field => $text) {
       if ($field == $sort_field) {
         array_push($bits, '<strong>' . $text . '</strong>');
@@ -376,23 +366,33 @@ $session_id = ""
       <small>Retrieved <?= $json_url ?> on <?= gmdate("Y-m-d h:i:sa") ?> UTC</small><br>
     </p>
 
-    <p><a href="https://adventofcode.com/2018" target="_blank">Advent of Code 2018</a> is a programming challenge created by <a href="http://was.tl/" target="_blank">Eric Wastl</a>.</p>
+    <p><a href="https://adventofcode.com/" target="_blank">Advent of Code</a> is a programming challenge created by <a href="http://was.tl/" target="_blank">Eric Wastl</a>.</p>
 
   <?php }
 
   if (empty($data) || empty($board_id) ||empty($session_id)) { ?>
 
-    <h4>Advent of Code 2018 Private leaderboard viewer</h4>
+    <h4>Advent of Code <?= $year ?> Private leaderboard viewer</h4>
 
     This is a simple PHP script that displays an Advent of Code's private leaderboard, including more stats and <strong>medals</strong> for the top three fastest solvers for each of the 50 stars. It was inspired by u/jeroenheijmans's <a href="https://www.reddit.com/r/adventofcode/comments/a4mdtp/chromefirefox_extension_with_charts_for_private/" target="_blank">Chrome/Firefox extension</a>.
 
     <?php if (empty($data) && (!empty($board_id) || !empty($session_id))) { ?>
 
+      <div style="color: #ff6666">
+
       <h4>Oops!</h4>
 
-      <p>There was a problem retrieving the JSON file for private leaderboard: <?php echo $board_id ?>.</p>
+      <p>There was a problem retrieving the JSON file for private leaderboard with ID <?php echo $board_id ?>!</p>
 
-      <p>The most likely reason is an incomplete (make sure to get all 64 hex digits!), invalid (you must be a member of the board to view it) or expired (log-in again) session ID.</p>
+      <p>Common reasons are:
+        <ul>
+          <li>Incomplete session ID: make sure to get all 64 hex digits!</li>
+          <li>Expired session ID: log in to adventofcode.com again to get a new session ID</li>
+          <li>Unauthorized user: you must be a member of the board to view it</li>
+        </ul>
+      </p>
+
+      </div>
 
     <?php } ?>
 
@@ -402,7 +402,7 @@ $session_id = ""
 
     <p>Having those modify this PHP file and edit the values of the <strong>$board_id</strong> and <strong>$session_id</strong> variables at the top of the file, and host the file yourself.</p>
 
-    <p><strong>NOTE: <u>Never</u> share or make public in any way your AoC cookie session ID, as you'll grant strangers access to your AoC account</strong></p>
+    <p><strong>NOTE: Never share or make your AoC cookie session ID public in any way, as you'll grant strangers access to your AoC account!</strong></p>
 
     <p>Here's how to obtain them:</p>
 
@@ -419,7 +419,7 @@ $session_id = ""
 
         <p>You'll need to access your adventofcode.com cookie and retrieve your session ID from it. It should be 96 hex digits long, something like this:<br> ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d</p>
 
-        <p>Navigate to <a href="https://adventofcode.com/2018" target="_blank">adventofcode.com</a> and <strong>log in</strong>. Then:</p>
+        <p>Navigate to <a href="https://adventofcode.com/<?= $year ?>" target="_blank">adventofcode.com</a> and <strong>log in</strong>. Then:</p>
 
         <p>On <strong>Chrome</strong>:</p>
         <ol>
