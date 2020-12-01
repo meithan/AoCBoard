@@ -1,9 +1,3 @@
-<?php
-
-// EDIT THIS FILE TO SET YOUR LEADERBOARD PARAMETERS
-require("config.php");
-
-?>
 <html lang="en-us">
 <head>
   <meta charset="utf-8"/>
@@ -133,6 +127,104 @@ require("config.php");
 
   <?php
 
+  /****************************************************************************/
+
+  // Retrieve and decode the board's JSON file
+  // Implements caching of the file so as to not retrieve it again from AoC's
+  // server if it's been retrieved less than $cache_seconds seconds ago.
+  function get_data($board_id, $event_year, $session_id) {
+
+    // Path to the JSON file on the local server
+    $JSON_path = "./board_" . $board_id . ".json";
+
+    // Number of seconds to cache the file
+    $cache_seconds = 900;
+
+    // The URL of the JSON file on the AoC server
+    $remote_url = "https://adventofcode.com/" . $event_year . "/leaderboard/private/view/" . $board_id . ".json";
+
+    // Determine if file needs to be retrieved from the AoC server
+    if (!file_exists($JSON_path)) {
+      $retrieve = true;
+    } else if (file_exists($JSON_path)) {
+      $retrieve = ((time() - filemtime($JSON_path)) > $cache_seconds);
+    }
+
+    // Retrieve file from the AoC server if nonexistent or cache expired
+    if ($retrieve) {
+
+      // Try and retrieve JSON file using cURL
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_URL, $remote_url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array("Cookie: session=" . $session_id));
+      $result = curl_exec($ch);
+      $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      // Save to disk if retrieval was successful
+      if ($status == "200") {
+        $file = fopen($JSON_path, 'w');
+        if ($file) {
+          fwrite($file, $result);
+          fclose($file);
+        }
+      }
+
+    }
+
+    // Read file from disk
+    if (file_exists($JSON_path)) {
+      $content = file_get_contents($JSON_path);
+      $mtime = filemtime($JSON_path);
+    } else {
+      return null;
+    }
+
+    // Decode JSON
+    $data = json_decode($content, true);
+    $data["last_update"] = $mtime;
+
+    return $data;
+
+  }
+
+  /****************************************************************************/
+
+  // Format the solve time as a nice string
+  function nice_solve_time($puzzle_open, $ts) {
+    $open_ts = $puzzle_open->getTimestamp();
+    $secs = $ts - $open_ts;
+    $result = "";
+    $days = 0;
+    $hours = 0;
+    $minutes = 0;
+    $bits = [];
+    if ($secs > 86400) {
+      $days = intval($secs/86400);
+      array_push($bits, $days . "d");
+      $secs -= $days * 86400;
+    }
+    if ($secs > 3600 || count($bits) > 0) {
+      $hours = intval($secs/3600);
+      array_push($bits, $hours . "h");
+      $secs -= $hours * 3600;
+    }
+    if ($secs > 60 || count($bits) > 0) {
+      $minutes = intval($secs/60);
+      array_push($bits, $minutes . "m");
+      $secs -= $minutes * 60;
+    }
+    return implode(" ", $bits);
+  }
+
+
+  /****************************************************************************/
+
+  // EDIT THIS FILE TO SET YOUR LEADERBOARD PARAMETERS
+  require("config.php");
+  $event_year = strval($event_year);
+
   if (isset($_GET["sort_field"])) {
     $sort_field = $_GET["sort_field"];
   } else {
@@ -141,50 +233,21 @@ require("config.php");
 
   if (!empty($board_id)) {
     $json_fname = $board_id . ".json";
-    $json_url = "https://adventofcode.com/" . $year . "/leaderboard/private/view/" . $json_fname;
   }
 
+  // Get data -- either from the local server's cache or from AoC
   if (!empty($board_id) && !empty($session_id)) {
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_URL, $json_url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Cookie: session=" . $session_id));
-    $result = curl_exec($ch);
-    curl_close($ch);
-    $data = json_decode($result, true);
-
-    function nice_solve_time($puzzle_open, $ts) {
-        $open_ts = $puzzle_open->getTimestamp();
-        $secs = $ts - $open_ts;
-        $result = "";
-        $days = 0;
-        $hours = 0;
-        $minutes = 0;
-        $bits = [];
-        if ($secs > 86400) {
-            $days = intval($secs/86400);
-            array_push($bits, $days . "d");
-            $secs -= $days * 86400;
-        }
-        if ($secs > 3600 || count($bits) > 0) {
-            $hours = intval($secs/3600);
-            array_push($bits, $hours . "h");
-            $secs -= $hours * 3600;
-        }
-        if ($secs > 60 || count($bits) > 0) {
-            $minutes = intval($secs/60);
-            array_push($bits, $minutes . "m");
-            $secs -= $minutes * 60;
-        }
-        return implode(" ", $bits);
-    }
-
+    $data = get_data($board_id, $event_year, $session_id);
+  } else {
+    $data = null;
   }
+
+  /****************************************************************************/
+  // OUTPUT PAGE
 
   if (!empty($data)) { ?>
 
-    <h4>Advent of Code <?= $year ?> &mdash; Private leaderboard #<?= $board_id ?> <?php if ($fromGET) { ?><small><a href="<?php echo parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH); ?>">view another</a></small><?php } ?></h4>
+    <h4>Advent of Code <?= $event_year ?> &mdash; Private leaderboard #<?= $board_id ?> <?php if ($fromGET) { ?><small><a href="<?php echo parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH); ?>">view another</a></small><?php } ?></h4>
 
     <?php
 
@@ -295,7 +358,7 @@ require("config.php");
           <?php
           for ($day = 1; $day <= 25; $day++) {
 
-            $puzzle_open = new DateTime($year . '-12-' . $day . "T" . "05:00:00Z");
+            $puzzle_open = new DateTime($event_year . '-12-' . $day . "T" . "05:00:00Z");
 
             for ($star_num = 1; $star_num <= 2; $star_num++) { ?>
 
@@ -342,7 +405,7 @@ require("config.php");
 
     </table>
 
-    <p><small>Sort by: <?php
+    <p>Sort by: <?php
     $bits = array();
     $entries = array("local_score"=>"score", "stars"=>"stars", "medals_tot"=>"total medals", "gold"=>"gold medals", "silver"=>"silver medals", "bronze"=>"bronze medals");
     foreach ($entries as $field => $text) {
@@ -360,39 +423,32 @@ require("config.php");
     }
     echo implode(" &ndash; ", $bits);
     ?>
-    </small></p>
-
-    <p>
-      <small>Retrieved <?= $json_url ?> on <?= gmdate("Y-m-d h:i:sa") ?> UTC</small><br>
     </p>
 
-    <p><a href="https://adventofcode.com/" target="_blank">Advent of Code</a> is a programming challenge created by <a href="http://was.tl/" target="_blank">Eric Wastl</a>.</p>
+    <p>
+      <small>JSON last updated on <?= date('Y-m-d H:i:s T', $data["last_update"]) ?> &mdash; data might be up to 15 minutes old.</small><br>
+    </p>
+
+    <p><a href="https://adventofcode.com/<?= $event_year ?>" target="_blank">Advent of Code <?= $event_year ?></a> is a programming challenge created by <a href="http://was.tl/" target="_blank">Eric Wastl</a>.</p>
 
   <?php }
 
+  /****************************************************************************/
+  // OUTPUT ERROR PAGE WITH INSTRUCTIONS
+
   if (empty($data) || empty($board_id) ||empty($session_id)) { ?>
 
-    <h4>Advent of Code <?= $year ?> Private leaderboard viewer</h4>
+    <h4>Advent of Code <?= $event_year ?> Private leaderboard viewer</h4>
 
     This is a simple PHP script that displays an Advent of Code's private leaderboard, including more stats and <strong>medals</strong> for the top three fastest solvers for each of the 50 stars. It was inspired by u/jeroenheijmans's <a href="https://www.reddit.com/r/adventofcode/comments/a4mdtp/chromefirefox_extension_with_charts_for_private/" target="_blank">Chrome/Firefox extension</a>.
 
     <?php if (empty($data) && (!empty($board_id) || !empty($session_id))) { ?>
 
-      <div style="color: #ff6666">
-
       <h4>Oops!</h4>
 
-      <p>There was a problem retrieving the JSON file for private leaderboard with ID <?php echo $board_id ?>!</p>
+      <p>There was a problem retrieving the JSON file for private leaderboard: <?php echo $board_id ?>.</p>
 
-      <p>Common reasons are:
-        <ul>
-          <li>Incomplete session ID: make sure to get all 64 hex digits!</li>
-          <li>Expired session ID: log in to adventofcode.com again to get a new session ID</li>
-          <li>Unauthorized user: you must be a member of the board to view it</li>
-        </ul>
-      </p>
-
-      </div>
+      <p>The most likely reason is an incomplete (make sure to get all 64 hex digits!), invalid (you must be a member of the board to view it) or expired (log-in again) session ID.</p>
 
     <?php } ?>
 
@@ -402,7 +458,7 @@ require("config.php");
 
     <p>Having those modify this PHP file and edit the values of the <strong>$board_id</strong> and <strong>$session_id</strong> variables at the top of the file, and host the file yourself.</p>
 
-    <p><strong>NOTE: Never share or make your AoC cookie session ID public in any way, as you'll grant strangers access to your AoC account!</strong></p>
+    <p><strong>NOTE: Never share or make your AoC cookie session ID public in any way, as you'll grant strangers access to your AoC account</strong></p>
 
     <p>Here's how to obtain them:</p>
 
@@ -419,7 +475,7 @@ require("config.php");
 
         <p>You'll need to access your adventofcode.com cookie and retrieve your session ID from it. It should be 96 hex digits long, something like this:<br> ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d</p>
 
-        <p>Navigate to <a href="https://adventofcode.com/<?= $year ?>" target="_blank">adventofcode.com</a> and <strong>log in</strong>. Then:</p>
+        <p>Navigate to <a href="https://adventofcode.com/<?= $event_year ?>" target="_blank">adventofcode.com</a> and <strong>log in</strong>. Then:</p>
 
         <p>On <strong>Chrome</strong>:</p>
         <ol>

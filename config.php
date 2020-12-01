@@ -5,7 +5,7 @@
 *********************************************/
 
 // The year of the AoC challenge
-$year = 2019;
+$event_year = "ENTER_EVENT_YEAR_HERE";
 
 // The private leaderboard id
 // This should be a numeric value with a few (4-6) digits
