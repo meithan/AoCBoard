@@ -247,7 +247,7 @@
 
   if (!empty($data)) { ?>
 
-    <h4>Advent of Code <?= $event_year ?> &mdash; Private leaderboard #<?= $board_id ?> <?php if ($fromGET) { ?><small><a href="<?php echo parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH); ?>">view another</a></small><?php } ?></h4>
+    <h4>Advent of Code <?= $event_year ?> &mdash; Private leaderboard #<?= $board_id ?></h4>
 
     <?php
 
@@ -414,9 +414,6 @@
       } else {
         $url = '<a href="' . parse_url($_SERVER["REQUEST_URI"],
         PHP_URL_PATH) . '?sort_field=' . $field;
-        if ($fromGET) {
-          $url .= '&boardid=' . $board_id . '&sessionid=' . $session_id;
-        }
         $url .= '">' . $text . '</a>';
         array_push($bits, $url);
       }
