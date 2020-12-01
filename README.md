@@ -30,7 +30,7 @@ You'll need to access your adventofcode.com cookie and retrieve your session ID 
 
 `ff26cf24aa0d4057d7de2454f41c409642b9047b4d0465aeb76ca39783a60b31b0f1a946f24f01e575c05789754df92d`
 
-Navigate to [adventofcode.com](https://adventofcode.com/2018) and **log in**. Then:
+Navigate to [adventofcode.com](https://adventofcode.com/) and **log in**. Then:
 
 On **Chrome**:
 
