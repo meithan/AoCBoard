@@ -90,23 +90,19 @@
     a:hover {
       color: #99ff99;
     }
-    a.tooltip {
-      text-decoration: none;
-      color: #ffff66;
-    }
     a.tooltip:hover {
       cursor: crosshair;
       font-size: 20pt;
       position: relative
     }
-    a.tooltip > span {
+    a.tooltip > span, a.tooltip2 > span {
       text-align: left;
       color: white;
       display: none;
       font-weight: normal;
       font-size: 12pt;
     }
-    a.tooltip:hover > span {
+    a.tooltip:hover > span, a.tooltip2:hover > span {
       border: #aaaaaa 1px solid;
       background-color: black;
       padding: 8px 8px 8px 8px;
@@ -118,6 +114,15 @@
       margin: 10px;
       text-decoration: none;
       white-space: nowrap;
+    }
+    a.tooltip2 {
+      text-decoration: none;
+      color: white;
+      font-size: 10pt;
+      padding-left: 5px;
+    }
+    a.tooltip2:hover {
+      position: relative
     }
     </style>
 </head>
@@ -406,8 +411,16 @@
     </table>
 
     <p>Sort by: <?php
+    $score_tooltip = '"For N users, the first user to get each star gets<br>N points, the second gets N-1, and the last gets 1."';
     $bits = array();
-    $entries = array("local_score"=>"score", "stars"=>"stars", "medals_tot"=>"total medals", "gold"=>"gold medals", "silver"=>"silver medals", "bronze"=>"bronze medals");
+    $entries = array(
+      "local_score"=>'score<span><a href="#" class="tooltip2">?<span>' . $score_tooltip . '</span></a></span>',
+      "stars"=>"stars",
+      "medals_tot"=>"total medals",
+      "gold"=>"gold medals",
+      "silver"=>"silver medals",
+      "bronze"=>"bronze medals"
+    );
     foreach ($entries as $field => $text) {
       if ($field == $sort_field) {
         array_push($bits, '<strong>' . $text . '</strong>');
