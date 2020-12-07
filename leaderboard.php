@@ -1,7 +1,17 @@
 <html lang="en-us">
 <head>
+
   <meta charset="utf-8"/>
+
+  <?php
+  // EDIT THIS FILE TO SET YOUR LEADERBOARD PARAMETERS
+  require("config.php");
+  ?>
+
+  <title>AoC<?= substr(strval($event_year), 2, 2) ?> Leaderboard #<?= $board_id ?></title>
+
   <link href='//fonts.googleapis.com/css?family=Source+Code+Pro:300&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+
   <style>
     body {
       background-color: #0f0f23;
@@ -35,6 +45,7 @@
       padding-right: 5px;
       text-align: center;
       font-size: 14pt;
+      height: 35px;
     }
     #main-table td.left-align {
       text-align: left;
@@ -89,6 +100,10 @@
     }
     a:hover {
       color: #99ff99;
+    }
+    a.tooltip {
+      text-decoration: none;
+      color: #ffff66;
     }
     a.tooltip:hover {
       cursor: crosshair;
@@ -220,15 +235,19 @@
       array_push($bits, $minutes . "m");
       $secs -= $minutes * 60;
     }
+    array_push($bits, $secs . "s");
     return implode(" ", $bits);
   }
 
+  // Formats a rank as a nice string
+  function nice_rank($rank) {
+    if ($rank == 1) return "1st";
+    else if ($rank == 2) return "2nd";
+    else if ($rank == 3) return "3rd";
+    else if ($rank > 3) return $rank . "th";
+  }
 
   /****************************************************************************/
-
-  // EDIT THIS FILE TO SET YOUR LEADERBOARD PARAMETERS
-  require("config.php");
-  $event_year = strval($event_year);
 
   if (isset($_GET["sort_field"])) {
     $sort_field = $_GET["sort_field"];
@@ -240,7 +259,7 @@
     $json_fname = $board_id . ".json";
   }
 
-  // Get data -- either from the local server's cache or from AoC
+  // Get data -- either from the server's cache or from AoC.com
   if (!empty($board_id) && !empty($session_id)) {
     $data = get_data($board_id, $event_year, $session_id);
   } else {
@@ -256,64 +275,82 @@
 
     <?php
 
+    # Initialize players
     $players = [];
     foreach ($data["members"] as $player) {
-        array_push($players, $player);
+      $player["gold"] = 0;
+      $player["silver"] = 0;
+      $player["bronze"] = 0;
+      $player["num_medals"] = 0;
+      $player["num_stars"] = $player["stars"];
+      $player["stars"] = array();
+      for ($day = 1; $day <= 25; $day++) {
+        for ($star_num = 1; $star_num <= 2; $star_num++) {
+          $player["stars"][$day][$star_num]["rank"] = null;
+          if (isset($player["completion_day_level"][$day][$star_num]["get_star_ts"])) {
+            $player["stars"][$day][$star_num]["ts"] = $player["completion_day_level"][$day][$star_num]["get_star_ts"];
+          } else {
+            $player["stars"][$day][$star_num]["ts"] = null;
+          }
+        }
+      }
+      $players[$player["id"]] = $player;
     }
 
-    // Determine medals
-    for ($i = 0; $i < count($players); $i++) {
-      $players[$i]["medals"] = [];
-      $players[$i]["gold"] = 0;
-      $players[$i]["silver"] = 0;
-      $players[$i]["bronze"] = 0;
-      $players[$i]["medals_tot"] = 0;
-    }
+    // Determine ranks and count medals for each star
     for ($day = 1; $day <= 25; $day++) {
-      for ($i = 0; $i < count($players); $i++) {
-        $players[$i]["medals"][$day] = [];
-      }
       for ($star_num = 1; $star_num <= 2; $star_num++) {
 
-        for ($i = 0; $i < count($players); $i++) {
-           $players[$i]["medals"][$day][$star_num] = [];
-        }
-
+        // Gather solve times
         $times = [];
-        for ($i = 0; $i < count($players); $i++) {
-          $player = $players[$i];
-          if (array_key_exists($day, $player["completion_day_level"])
-          && array_key_exists($star_num, $player["completion_day_level"][$day])) {
-            array_push($times, [$player["id"], $player["completion_day_level"][$day][$star_num]["get_star_ts"]]);
+        foreach ($players as $player) {
+          $s = $player["stars"][$day][$star_num];
+          if (!is_null($s["ts"])) {
+            $times[] = [$player["id"], $s["ts"]];
           }
         }
-        usort($times, function($a, $b) {
-          if ($a[1] < $b[1]) return -1;
-          else if ($a[1] > $b[1]) return +1;
-          else return 0;
-        });
 
-        for ($i = 0; $i < count($players); $i++) {
-          if (count($times) >= 1 && $times[0][0] == $players[$i]["id"]) {
-            $players[$i]["medals"][$day][$star_num]["gold"] = $times[0][1];
-            $players[$i]["gold"] += 1;
-          } else if (count($times) >= 2 && $times[1][0] == $players[$i]["id"]) {
-            $players[$i]["medals"][$day][$star_num]["silver"] = $times[0][1];
-            $players[$i]["silver"] += 1;
-          } else if (count($times) >= 3 && $times[2][0] == $players[$i]["id"]) {
-            $players[$i]["medals"][$day][$star_num]["bronze"] = $times[0][1];
-            $players[$i]["bronze"] += 1;
+        if (count($times) > 0) {
+
+          // Sort by solve time
+          usort($times, function($a, $b) {
+            if ($a[1] < $b[1]) return -1;
+            else if ($a[1] > $b[1]) return +1;
+            else return 0;
+          });
+
+          // Save rank and medals
+          for ($i = 0; $i < count($times); $i++) {
+            $rank = $i + 1;
+            $pid = $times[$i][0];
+            $ts = $times[$i][1];
+            // echo $rank . " " . $pid . " " . $ts . "\n";
+            $players[$pid]["stars"][$day][$star_num]["rank"] = $rank;
+            if ($rank == 1) {
+              $players[$pid]["gold"] += 1;
+              $players[$pid]["num_medals"] += 1;
+            } else if ($rank == 2) {
+              $players[$pid]["silver"] += 1;
+              $players[$pid]["num_medals"] += 1;
+            } else if ($rank == 3) {
+              $players[$pid]["bronze"] += 1;
+              $players[$pid]["num_medals"] += 1;
+            }
           }
+
         }
 
       }
     }
-    for ($i = 0; $i < count($players); $i++) {
-      $players[$i]["medals_tot"] = $players[$i]["gold"] + $players[$i]["silver"] + $players[$i]["bronze"];
+
+    // Compute the points awarded to each rank
+    $points_rank = array();
+    for ($rank = 1; $rank <= count($players); $rank++) {
+      $points_rank[$rank] = count($players) - $rank + 1;
     }
 
-    // Sort players by local score
-    function comparator($a, $b) {
+    // Sort players by selected sort field
+    usort($players, function ($a, $b) {
       global $sort_field;
       if ($a[$sort_field] < $b[$sort_field]) {
         return +1;
@@ -322,8 +359,7 @@
       } else {
         return 0;
       }
-    };
-    usort($players, "comparator");
+    });
 
     $medals_tot_img = '<img src="medals.png"/>';
     $medal_gold_img = '<img src="medal_gold.png"/>';
@@ -354,11 +390,11 @@
           <td><?= $i+1 ?></td>
           <td class="left-align"><?= $players[$i]["name"] ?></td>
           <td><?= $players[$i]["local_score"] ?></td>
-          <td><?= $players[$i]["stars"] ?></td>
+          <td><?= $players[$i]["num_stars"] ?></td>
           <td><?= $players[$i]["gold"] ?></td>
           <td><?= $players[$i]["silver"] ?></td>
           <td><?= $players[$i]["bronze"] ?></td>
-          <td><?= $players[$i]["medals_tot"] ?></td>
+          <td><?= $players[$i]["num_medals"] ?></td>
           <!--<td><?= $players[$i]["global_score"] ?></td>-->
           <?php
           for ($day = 1; $day <= 25; $day++) {
@@ -368,32 +404,36 @@
             for ($star_num = 1; $star_num <= 2; $star_num++) { ?>
 
               <td class="<?= 'star-table-' . $star_num ?>">
+
               <?php $cell = "";
 
-              if (array_key_exists($day, $players[$i]["completion_day_level"])
-              && array_key_exists($star_num,
-              $players[$i]["completion_day_level"][$day])) {
+              if (!is_null($players[$i]["stars"][$day][$star_num]["ts"])) {
 
-                $solve_ts = $players[$i]["completion_day_level"][$day][$star_num]["get_star_ts"];
+                $s = $players[$i]["stars"][$day][$star_num];
+
+                $solve_ts = $s["ts"];
+                $solve_datetime = new DateTime('@' . $solve_ts);
+                $solve_datetime->setTimezone(new DateTimeZone($show_timezone));
 
                 $tooltip = '<span>Day ' . $day . ' Star '. $star_num;
-                $tooltip .= '<br>Obtained ' . gmdate("Y-m-d H:i:s", $solve_ts) . " UTC";
+                $tooltip .= '<br>Obtained ' . $solve_datetime->format('Y-m-d H:i:s T');
                 $tooltip .= "<br>Solve time: " . nice_solve_time($puzzle_open, $solve_ts);
-                if (array_key_exists("gold", $players[$i]["medals"][$day][$star_num])) {
+                $tooltip .= "<br>" . $points_rank[$s["rank"]]. " points obtained (" .  nice_rank($s["rank"]) . " place)";
+                if ($s["rank"] == 1) {
                   $tooltip .= '<br><span class="gold">Gold</span> medal awarded!';
-                } else if (array_key_exists("silver", $players[$i]["medals"][$day][$star_num])) {
+                } else if ($s["rank"] == 2) {
                   $tooltip .= '<br><span class="silver">Silver</span> medal awarded!';
-                } else if (array_key_exists("bronze", $players[$i]["medals"][$day][$star_num])) {
+                } else if ($s["rank"] == 3) {
                   $tooltip .= '<br><span class="bronze">Bronze</span> medal awarded!';
                 }
                 $tooltip .= '</span>';
-
                 $cell = '<span class="star star-gold"><a href="#" class="tooltip">*' . $tooltip . '</a></span>';
-                if (array_key_exists("gold", $players[$i]["medals"][$day][$star_num])) {
+
+                if ($s["rank"] == 1) {
                   $cell .= '<br><a href="#" class="tooltip">' . $medal_gold_img . $tooltip . '</a>';
-                } else if (array_key_exists("silver", $players[$i]["medals"][$day][$star_num])) {
+                } else if ($s["rank"] == 2) {
                   $cell .= '<br><a href="#" class="tooltip">' . $medal_silver_img . $tooltip . '</a>';
-                } else if (array_key_exists("bronze", $players[$i]["medals"][$day][$star_num])) {
+                } else if ($s["rank"] == 3) {
                   $cell .= '<br><a href="#" class="tooltip">' . $medal_bronze_img . $tooltip . '</a>';
                 }
 
@@ -435,8 +475,15 @@
     ?>
     </p>
 
+    <p>Medals are awarded to the top three fastest solvers for each star.</p>
+
+    <?php
+      $last_update_datetime = new DateTime('@' . $data["last_update"]);
+      $last_update_datetime->setTimezone(new DateTimeZone($show_timezone));
+    ?>
+
     <p>
-      <small>JSON last updated on <?= date('Y-m-d H:i:s T', $data["last_update"]) ?> &mdash; data might be up to 15 minutes old.</small><br>
+      <small>JSON last updated on <?= $last_update_datetime->format('Y-m-d H:i:s T') ?> &mdash; data might be up to 15 minutes old.</small><br>
     </p>
 
     <p><a href="https://adventofcode.com/<?= $event_year ?>" target="_blank">Advent of Code <?= $event_year ?></a> is a programming challenge created by <a href="http://was.tl/" target="_blank">Eric Wastl</a>.</p>
