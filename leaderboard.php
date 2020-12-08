@@ -254,6 +254,10 @@
   } else {
     $sort_field = "local_score";
   }
+  $sort_fields = [$sort_field];
+  foreach (["local_score", "num_stars", "num_medals", "num_gold", "num_silver", "num_bronze"] as $field) {
+    if ($field != $sort_field) $sort_fields[] = $field;
+  }
 
   if (!empty($board_id)) {
     $json_fname = $board_id . ".json";
@@ -278,9 +282,9 @@
     # Initialize players
     $players = [];
     foreach ($data["members"] as $player) {
-      $player["gold"] = 0;
-      $player["silver"] = 0;
-      $player["bronze"] = 0;
+      $player["num_gold"] = 0;
+      $player["num_silver"] = 0;
+      $player["num_bronze"] = 0;
       $player["num_medals"] = 0;
       $player["num_stars"] = $player["stars"];
       $player["stars"] = array();
@@ -327,13 +331,13 @@
             // echo $rank . " " . $pid . " " . $ts . "\n";
             $players[$pid]["stars"][$day][$star_num]["rank"] = $rank;
             if ($rank == 1) {
-              $players[$pid]["gold"] += 1;
+              $players[$pid]["num_gold"] += 1;
               $players[$pid]["num_medals"] += 1;
             } else if ($rank == 2) {
-              $players[$pid]["silver"] += 1;
+              $players[$pid]["num_silver"] += 1;
               $players[$pid]["num_medals"] += 1;
             } else if ($rank == 3) {
-              $players[$pid]["bronze"] += 1;
+              $players[$pid]["num_bronze"] += 1;
               $players[$pid]["num_medals"] += 1;
             }
           }
@@ -351,14 +355,15 @@
 
     // Sort players by selected sort field
     usort($players, function ($a, $b) {
-      global $sort_field;
-      if ($a[$sort_field] < $b[$sort_field]) {
-        return +1;
-      } else if ($a[$sort_field] > $b[$sort_field]) {
-        return -1;
-      } else {
-        return 0;
+      global $sort_fields;
+      foreach ($sort_fields as $field) {
+        if ($a[$field] < $b[$field]) {
+          return +1;
+        } else if ($a[$field] > $b[$field]) {
+          return -1;
+        }
       }
+      return strcmp($a["name"], $b["name"]);
     });
 
     $medals_tot_img = '<img src="medals.png"/>';
@@ -373,12 +378,12 @@
       <tr>
         <th><strong>#</strong></th>
         <th class="left-align"><strong>Name</strong></th>
-        <th><strong>Score</strong></th>
+        <th><strong>score</strong></th>
         <th><span class="star-big star-gold">*</span></th>
+        <th><?= $medals_tot_img ?></th>
         <th><?= $medal_gold_img ?></th>
         <th><?= $medal_silver_img ?></th>
         <th><?= $medal_bronze_img ?></th>
-        <th><?= $medals_tot_img ?></th>
         <!--<th><strong>GScore</strong></th>-->
         <?php for ($day = 1; $day <= 25; $day++) { ?>
           <th colspan="2"><?= $day ?></th>
@@ -391,10 +396,10 @@
           <td class="left-align"><?= $players[$i]["name"] ?></td>
           <td><?= $players[$i]["local_score"] ?></td>
           <td><?= $players[$i]["num_stars"] ?></td>
-          <td><?= $players[$i]["gold"] ?></td>
-          <td><?= $players[$i]["silver"] ?></td>
-          <td><?= $players[$i]["bronze"] ?></td>
           <td><?= $players[$i]["num_medals"] ?></td>
+          <td><?= $players[$i]["num_gold"] ?></td>
+          <td><?= $players[$i]["num_silver"] ?></td>
+          <td><?= $players[$i]["num_bronze"] ?></td>
           <!--<td><?= $players[$i]["global_score"] ?></td>-->
           <?php
           for ($day = 1; $day <= 25; $day++) {
@@ -454,12 +459,12 @@
     $score_tooltip = '"For N users, the first user to get each star gets<br>N points, the second gets N-1, and the last gets 1."';
     $bits = array();
     $entries = array(
-      "local_score"=>'score<span><a href="#" class="tooltip2">?<span>' . $score_tooltip . '</span></a></span>',
-      "stars"=>"stars",
+      "local_score"=>'local score<span><a href="#" class="tooltip2">?<span>' . $score_tooltip . '</span></a></span>',
+      "num_stars"=>"stars",
       "medals_tot"=>"total medals",
-      "gold"=>"gold medals",
-      "silver"=>"silver medals",
-      "bronze"=>"bronze medals"
+      "num_gold"=>"gold medals",
+      "num_silver"=>"silver medals",
+      "num_bronze"=>"bronze medals"
     );
     foreach ($entries as $field => $text) {
       if ($field == $sort_field) {
